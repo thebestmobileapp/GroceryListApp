@@ -20,6 +20,9 @@ class GroceryList extends StatefulWidget {
 class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> groceryItems = [];
 
+  //used to set up the loading spinner when user first opens the screen
+  var isLoading = true;
+
   @override
   //we want to send our first request when screen is open for the first time
   void initState() {
@@ -29,7 +32,7 @@ class _GroceryListState extends State<GroceryList> {
 
   void loadItems() async {
     final url = Uri.https(
-        'fast-sign-398618-default-rtdb.europe-west1.firebasedatabase.app',
+        'test2-59037-default-rtdb.europe-west1.firebasedatabase.app',
         'shopping-list.json');
     final response = await http.get(url);
     // print(response.body);
@@ -59,6 +62,7 @@ class _GroceryListState extends State<GroceryList> {
     //now we move the overwrite our local list with database values.
     setState(() {
       groceryItems = loadedItems;
+      isLoading = false;
     });
   }
 
@@ -79,13 +83,18 @@ class _GroceryListState extends State<GroceryList> {
     });
   }*/
     //use this code if adding item to the database.
-    await Navigator.of(context).push<GroceryItem>(
+    final newItem = await Navigator.of(context).push<GroceryItem>(
       MaterialPageRoute(
         builder: (ctx) => const NewItem(),
       ),
     );
 
-    loadItems();
+    if (newItem == null) {
+      return;
+    }
+    setState(() {
+      groceryItems.add(newItem);
+    });
   }
 
   void removeItem(
@@ -125,7 +134,14 @@ class _GroceryListState extends State<GroceryList> {
         style: TextStyle(fontSize: 20),
       ),
     );
+//we use a valid check to see if first time loading
+// and set up a spinner for the screen
 
+    if (isLoading) {
+      content = const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     if (groceryItems.isNotEmpty) {
       content = ListView.builder(
           itemCount: groceryItems

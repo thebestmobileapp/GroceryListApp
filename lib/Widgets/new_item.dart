@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shopping_list/data/categories.dart';
 import 'package:http/http.dart' as http;
+import 'package:shopping_list/data/dummy_items.dart';
 import 'package:shopping_list/models/category.dart';
+import 'package:shopping_list/models/grocery_items.dart';
 
 class NewItem extends StatefulWidget {
   const NewItem({super.key});
@@ -24,15 +26,21 @@ class _NewItemState extends State<NewItem> {
   var _enteredQuantity = 1;
   var _selectCategory = categories[Categories.fruit]!;
 
-  // get id =>String.fromCharCode()
+  //used to set up the loading state
+  var _isSending = false;
+
   void _saveItem() async {
     //checks all validation within an element.
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      setState(() {
+        _isSending = true;
+      });
+
       //use this code when working with databases.
 
       final url = Uri.https(
-          'fast-sign-398618-default-rtdb.europe-west1.firebasedatabase.app',
+          'test2-59037-default-rtdb.europe-west1.firebasedatabase.app',
           'shopping-list.json');
       final response = await http.post(
         url,
@@ -46,13 +54,20 @@ class _NewItemState extends State<NewItem> {
           'category': _selectCategory.title,
         }),
       );
+      //decoded the data from database to extract the id
+      final Map<String, dynamic> resData = json.decode(response.body);
       print(response.body);
       print(response.statusCode);
       //check if widget is not part of the screen anymore
       if (!context.mounted) {
         return;
       }
-      Navigator.of(context).pop(); //up to here
+      Navigator.of(context).pop(GroceryItem(
+        id: resData['name'],
+        name: _enteredName,
+        quantity: _enteredQuantity,
+        category: _selectCategory,
+      )); //up to here
 
       //takes you back to the previous screen to get the GroceryItem List Map object
       //which is   'final List<GroceryItem> _groceryItems' = [];
@@ -176,15 +191,27 @@ class _NewItemState extends State<NewItem> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () {
-                    //clears the form.
-                    _formKey.currentState!.reset();
-                  },
+                  //disable the reset button if
+                  onPressed: _isSending
+                      ? null
+                      : () {
+                          //clears the form.
+                          _formKey.currentState!.reset();
+                        },
                   child: const Text('Reset'),
                 ),
                 ElevatedButton(
-                  onPressed: _saveItem,
-                  child: const Text('Add Item'),
+                  //disable add item buttons if we are saving
+                  onPressed: _isSending ? null : _saveItem,
+                  //while we are saving showing the loading circle
+                  child: _isSending
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(),
+                        )
+                      //if not saving the fallback text
+                      : const Text('Add item'),
                 ),
               ],
             )
