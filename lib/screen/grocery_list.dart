@@ -20,6 +20,9 @@ class GroceryList extends StatefulWidget {
 class _GroceryListState extends State<GroceryList> {
   List<GroceryItem> groceryItems = [];
 
+  //initialize to null or a String if not null
+  String? _error;
+
   //used to set up the loading spinner when user first opens the screen
   var isLoading = true;
 
@@ -35,6 +38,16 @@ class _GroceryListState extends State<GroceryList> {
         'test2-59037-default-rtdb.europe-west1.firebasedatabase.app',
         'shopping-list.json');
     final response = await http.get(url);
+    //this checks the status code to see if the request caused an error.
+    print(response.statusCode);
+
+    if (response.statusCode >= 400) {
+      //ui is updated so call 'set state'
+      setState(() {
+        _error = 'Failed to fetch data. please try again later.';
+      });
+    }
+
     // print(response.body);
     //now we want to load the database data on to our screen
     //its a nested map first map is a String 'Category' inner map
@@ -166,6 +179,11 @@ class _GroceryListState extends State<GroceryList> {
                   trailing: Text(groceryItems[index].quantity.toString()),
                 ),
               ));
+    }
+    if (_error != null) {
+      content = Center(
+        child: Text(_error!),
+      );
     }
     return Scaffold(
         appBar: AppBar(
